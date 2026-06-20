@@ -1,38 +1,108 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<!-- Fluxo Tracker: Kwai PageView Pixel (EVENT_CONTENT_VIEW) -->
 <script>
-(function() {
-  var u = new URLSearchParams(window.location.search);
-  var KEYS = ['utm_source','utm_medium','utm_campaign','utm_content','utm_term','utm_id','fbclid','ttclid','click_id','_fbp','gclid','xcod','sck','cv','salesCode'];
-  var captured = {};
-  KEYS.forEach(function(k){ var v = u.get(k); if (v) captured[k] = v; });
-  try {
-    var saved = JSON.parse(sessionStorage.getItem('shark_utms') || '{}');
-    Object.keys(captured).forEach(function(k){ saved[k] = captured[k]; });
-    sessionStorage.setItem('shark_utms', JSON.stringify(saved));
-    captured = saved;
-  } catch(e) {}
-  function buildLink(originalHref) {
-    var url = new URL(originalHref, location.origin);
-    Object.keys(captured).forEach(function(k){
-      if (!url.searchParams.has(k)) url.searchParams.set(k, captured[k]);
-    });
-    return url.toString();
-  }
-  function attach() {
-    document.querySelectorAll('a.button, a.cta, a[href*="/l/"], a[href*="/c/"], a[href*="/b/"]').forEach(function(btn){
-      btn.addEventListener('click', function(e){
-        try { btn.href = buildLink(btn.href); } catch(err) {}
-      }, { once: false, capture: true });
-    });
-  }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', attach);
-  } else {
-    attach();
-  }
-})();
+(function(w, d, u, p) {
+    function getParam(n) {
+        var m = RegExp('[?&]' + n + '=([^&]*)').exec(w.location.search);
+        return m && decodeURIComponent(m[1].split('+').join(' '));
+    }
+    
+    var clickId = getParam('click_id') || getParam('clickid') || getParam('kwai_click_id') || getParam('kwclid');
+    
+    // Persist click_id in localStorage to prevent loss on navigation
+    var storageClickKey = "ft_kwai_click_id";
+    if (clickId) {
+        try { w.localStorage.setItem(storageClickKey, clickId); } catch(e) {}
+    } else {
+        try { clickId = w.localStorage.getItem(storageClickKey); } catch(e) {}
+    }
+
+    function decorateLinks() {
+        if (!clickId) return;
+        var domains = ['kiwify', 'yampi', 'cartpanda', 'hotmart', 'perfectpay', 'monetizze', 'eduzz', 'checkout', 'pay', 'seguro'];
+        var links = d.getElementsByTagName('a');
+        for (var i = 0; i < links.length; i++) {
+            var href = links[i].href;
+            if (!href || href.indexOf('javascript:') === 0 || href.indexOf('#') === 0) continue;
+            var isCheckout = false;
+            for (var j = 0; j < domains.length; j++) {
+                if (href.indexOf(domains[j]) !== -1) {
+                    isCheckout = true;
+                    break;
+                }
+            }
+            if (isCheckout) {
+                try {
+                    // Check if already decorated to prevent infinite loops/redundancy
+                    if (href.indexOf('kwclid=') !== -1) continue;
+                    
+                    var separator = href.indexOf('?') !== -1 ? '&' : '?';
+                    var decorated = href + separator + 'click_id=' + encodeURIComponent(clickId) +
+                                    '&clickid=' + encodeURIComponent(clickId) +
+                                    '&kwclid=' + encodeURIComponent(clickId) +
+                                    '&kwai_click_id=' + encodeURIComponent(clickId);
+                    
+                    // Also append utm_content if not already present
+                    if (href.indexOf('utm_content=') === -1) {
+                        decorated += '&utm_content=' + encodeURIComponent(clickId);
+                    }
+                    links[i].href = decorated;
+                } catch (e) {}
+            }
+        }
+    }
+
+    function track() {
+        var storageKey = "ft_kwai_tracked_" + p + "_" + (clickId || 'default');
+        
+        if (sessionStorage.getItem(storageKey)) {
+            console.log("Fluxo Tracker: Visualização já registrada nesta sessão.");
+            return;
+        }
+
+        var payload = {
+            pixel_id: p,
+            click_id: clickId,
+            clickid: clickId,
+            CampaignID: getParam('CampaignID') || getParam('campaignid') || getParam('utm_campaign'),
+            adSETID: getParam('adSETID') || getParam('adsetid'),
+            CreativeID: getParam('CreativeID') || getParam('creativeid'),
+            utm_source: getParam('utm_source'),
+            utm_medium: getParam('utm_medium'),
+            utm_campaign: getParam('utm_campaign'),
+            utm_term: getParam('utm_term'),
+            utm_content: getParam('utm_content'),
+            event_source_url: w.location.href,
+            referrer_url: d.referrer,
+            trackFlag: false
+        };
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", u, true);
+        xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4) {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    console.log("Fluxo Tracker: EVENT_CONTENT_VIEW enviado com sucesso.");
+                    sessionStorage.setItem(storageKey, "true");
+                } else {
+                    console.error("Fluxo Tracker: Erro ao registrar visualização de página.", xhr.responseText);
+                }
+            }
+        };
+        xhr.send(JSON.stringify(payload));
+    }
+    
+    // Run link decoration
+    if (clickId) {
+        decorateLinks();
+        setInterval(decorateLinks, 1500);
+    }
+
+    if (d.readyState === "complete" || d.readyState === "interactive") { track(); }
+    else { w.addEventListener("DOMContentLoaded", track); }
+})(window, document, "https://fluxo.plus/api/kwai/track", "313958722707321");
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
