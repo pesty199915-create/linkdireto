@@ -6,21 +6,16 @@
 (function(w, d, u, p) {
     function getParam(n) {
         var m = RegExp('[?&]' + n + '=([^&]*)').exec(w.location.search);
-        return m && decodeURIComponent(m[1].replace(/+/g, ' '));
+        return m && decodeURIComponent(m[1].split('+').join(' '));
     }
     function track() {
         var payload = {
             pixel_id: p,
-            click_id: getParam('click_id')  getParam('clickid') 
- getParam('kwai_click_id')  getParam('kwclid'),
-            clickid: getParam('click_id') 
- getParam('clickid')  getParam('kwai_click_id') 
- getParam('kwclid'),
-            CampaignID: getParam('CampaignID')  getParam('campaignid') 
- getParam('utm_campaign'),
-            adSETID: getParam('adSETID')  getParam('adsetid'),
-            CreativeID: getParam('CreativeID') 
- getParam('creativeid'),
+            click_id: getParam('click_id') || getParam('clickid') || getParam('kwai_click_id') || getParam('kwclid'),
+            clickid: getParam('click_id') || getParam('clickid') || getParam('kwai_click_id') || getParam('kwclid'),
+            CampaignID: getParam('CampaignID') || getParam('campaignid') || getParam('utm_campaign'),
+            adSETID: getParam('adSETID') || getParam('adsetid'),
+            CreativeID: getParam('CreativeID') || getParam('creativeid'),
             utm_source: getParam('utm_source'),
             utm_medium: getParam('utm_medium'),
             utm_campaign: getParam('utm_campaign'),
