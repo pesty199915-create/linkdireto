@@ -1,58 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<!-- Fluxo Tracker: Kwai PageView Pixel (EVENT_CONTENT_VIEW) -->
-<script>
-(function(w, d, u, p) {
-    function getParam(n) {
-        var m = RegExp('[?&]' + n + '=([^&]*)').exec(w.location.search);
-        return m && decodeURIComponent(m[1].split('+').join(' '));
-    }
-    function track() {
-        var clickId = getParam('click_id') || getParam('clickid') || getParam('kwai_click_id') || getParam('kwclid');
-        var storageKey = "ft_kwai_tracked_" + p + "_" + (clickId || 'default');
-        
-        if (sessionStorage.getItem(storageKey)) {
-            console.log("Fluxo Tracker: Visualização já registrada nesta sessão.");
-            return;
-        }
-
-        var payload = {
-            pixel_id: p,
-            click_id: clickId,
-            clickid: clickId,
-            CampaignID: getParam('CampaignID') || getParam('campaignid') || getParam('utm_campaign'),
-            adSETID: getParam('adSETID') || getParam('adsetid'),
-            CreativeID: getParam('CreativeID') || getParam('creativeid'),
-            utm_source: getParam('utm_source'),
-            utm_medium: getParam('utm_medium'),
-            utm_campaign: getParam('utm_campaign'),
-            utm_term: getParam('utm_term'),
-            utm_content: getParam('utm_content'),
-            event_source_url: w.location.href,
-            referrer_url: d.referrer,
-            trackFlag: false
-        };
-        var xhr = new XMLHttpRequest();
-        xhr.open("POST", u, true);
-        xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-        xhr.onreadystatechange = function () {
-            if (xhr.readyState === 4) {
-                if (xhr.status >= 200 && xhr.status < 300) {
-                    console.log("Fluxo Tracker: EVENT_CONTENT_VIEW enviado com sucesso.");
-                    sessionStorage.setItem(storageKey, "true");
-                } else {
-                    console.error("Fluxo Tracker: Erro ao registrar visualização de página.", xhr.responseText);
-                }
-            }
-        };
-        xhr.send(JSON.stringify(payload));
-    }
-    if (d.readyState === "complete" || d.readyState === "interactive") { track(); }
-    else { w.addEventListener("DOMContentLoaded", track); }
-})(window, document, "https://fluxo.plus/api/kwai/track", "313932296401522");
-</script>
-
 <!-- xTracky - Preservação de UTMs e webhooks -->
 
 <!-- Shark UTMs - Responsável por capturar e repassar TODOS os parâmetros -->
