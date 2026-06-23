@@ -11,14 +11,25 @@
     // Captura todos os parâmetros da URL
     var urlParams = new URLSearchParams(window.location.search);
     
-    // Lista completa de parâmetros que o Kwai Ads pode enviar
+    // ===== LISTA COMPLETA DE PARÂMETROS =====
     var paramKeys = [
+        // UTM padrão
         'utm_source',
         'utm_medium', 
         'utm_campaign',
         'utm_content',
         'utm_term',
         'utm_id',
+        
+        // ===== NOVOS: NOME DO CRIATIVO =====
+        'adname',          // Nome do criativo
+        'ad_name',         // Nome do criativo (alternativo)
+        'creative',        // Nome do criativo (alternativo)
+        'creative_name',   // Nome do criativo (alternativo)
+        'kwai_ad',         // Nome do criativo no Kwai
+        'kwai_creative',   // Nome do criativo no Kwai (alternativo)
+        
+        // Rastreamento
         'fbclid',
         'gclid',
         'click_id',
@@ -27,10 +38,13 @@
         'ttclid',
         '_fbp',
         '_fbc',
+        
+        // Kwai específicos
         'kwai_id',
         'kwai_campaign',
         'kwai_adset',
-        'kwai_ad',
+        
+        // Outros
         'sck',
         'xcod',
         'cv',
@@ -57,23 +71,20 @@
         }
     });
     
-    // ⬇️⬇️⬇️ NOVO CÓDIGO: Extrai pixel_id do utm_content ⬇️⬇️⬇️
+    // Extrai pixel_id do utm_content
     if (capturedParams.utm_content) {
         var parts = capturedParams.utm_content.split('::');
         if (parts.length === 3) {
-            // parts[0] = ADID, parts[1] = CALLBACK, parts[2] = PIXELID
             if (!capturedParams.pixel_id) {
-                capturedParams.pixel_id = parts[2]; // __KS_PIXELID__
+                capturedParams.pixel_id = parts[2];
                 hasParams = true;
             }
-            // Se não veio click_id separado, usa o do callback
             if (!capturedParams.click_id && !capturedParams.kwai_click_id) {
                 capturedParams.click_id = parts[1];
                 hasParams = true;
             }
         }
     }
-    // ⬆️⬆️⬆️ FIM DA EXTRACÃO ⬆️⬆️⬆️
     
     // Salva no sessionStorage para manter entre páginas
     try {
