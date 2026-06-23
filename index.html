@@ -13,56 +13,17 @@
     
     // ===== LISTA COMPLETA DE PARÂMETROS =====
     var paramKeys = [
-        // UTM padrão
-        'utm_source',
-        'utm_medium', 
-        'utm_campaign',
-        'utm_content',
-        'utm_term',
-        'utm_id',
-        
-        // ===== NOVOS: NOME DO CRIATIVO =====
-        'adname',          // Nome do criativo
-        'ad_name',         // Nome do criativo (alternativo)
-        'creative',        // Nome do criativo (alternativo)
-        'creative_name',   // Nome do criativo (alternativo)
-        'kwai_ad',         // Nome do criativo no Kwai
-        'kwai_creative',   // Nome do criativo no Kwai (alternativo)
-        
-        // Rastreamento
-        'fbclid',
-        'gclid',
-        'click_id',
-        'kwai_click_id',
-        'msclkid',
-        'ttclid',
-        '_fbp',
-        '_fbc',
-        
-        // Kwai específicos
-        'kwai_id',
-        'kwai_campaign',
-        'kwai_adset',
-        
-        // Outros
-        'sck',
-        'xcod',
-        'cv',
-        'salesCode',
-        'source',
-        'medium',
-        'campaign',
-        'content',
-        'term',
-        'apx',
-        'pixel_id'
+        'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'utm_id',
+        'adname', 'ad_name', 'creative', 'creative_name', 'kwai_ad', 'kwai_creative',
+        'fbclid', 'gclid', 'click_id', 'kwai_click_id', 'msclkid', 'ttclid', '_fbp', '_fbc',
+        'kwai_id', 'kwai_campaign', 'kwai_adset',
+        'sck', 'xcod', 'cv', 'salesCode', 'source', 'medium', 'campaign', 'content', 'term', 'apx', 'pixel_id'
     ];
     
-    // Armazena os parâmetros capturados
     var capturedParams = {};
     var hasParams = false;
     
-    // Primeiro, captura todos os parâmetros da lista
+    // Captura todos os parâmetros da lista
     paramKeys.forEach(function(key) {
         var value = urlParams.get(key);
         if (value) {
@@ -71,9 +32,50 @@
         }
     });
     
-    // Extrai pixel_id do utm_content
-    if (capturedParams.utm_content) {
-        var parts = capturedParams.utm_content.split('::');
+    // ===== LÓGICA: JUNTA utm_content + adname =====
+    var utmContent = capturedParams.utm_content || '';
+    var adName = capturedParams.adname || capturedParams.ad_name || capturedParams.creative || '';
+    
+    // Extrai o ID do criativo do utm_content (primeira parte antes do ::)
+    var criativoID = utmContent.split('::')[0] || utmContent;
+    
+    // ===== CRIA O NOME COMPLETO DO CRIATIVO =====
+    var nomeCriativo = '';
+    
+    if (adName && adName.length > 0 && adName.length < 100) {
+        // Se tem adname, usa ele como nome principal
+        nomeCriativo = adName;
+        
+        // Se tem ID, adiciona como complemento
+        if (criativoID && criativoID.length > 0 && criativoID !== adName) {
+            nomeCriativo = criativoID + ' - ' + adName;
+        }
+    } else if (criativoID && criativoID.length > 0) {
+        // Se não tem adname, usa o ID
+        nomeCriativo = 'Criativo ID: ' + criativoID;
+    }
+    
+    // Se tem utm_content completo, adiciona como fallback
+    if (!nomeCriativo && utmContent) {
+        nomeCriativo = utmContent;
+    }
+    
+    // ===== SUBSTITUI O utm_content PELO NOME COMPLETO =====
+    if (nomeCriativo) {
+        // Substitui o utm_content original pelo nome completo
+        capturedParams.utm_content = nomeCriativo;
+        
+        // Também adiciona como adname para compatibilidade
+        capturedParams.adname = nomeCriativo;
+        capturedParams.creative = nomeCriativo;
+        
+        console.log('🎯 Nome do criativo gerado: ' + nomeCriativo);
+        hasParams = true;
+    }
+    
+    // Extrai pixel_id e click_id do utm_content original (se disponível)
+    if (utmContent && utmContent.includes('::')) {
+        var parts = utmContent.split('::');
         if (parts.length === 3) {
             if (!capturedParams.pixel_id) {
                 capturedParams.pixel_id = parts[2];
@@ -86,7 +88,7 @@
         }
     }
     
-    // Salva no sessionStorage para manter entre páginas
+    // Salva no sessionStorage
     try {
         var existing = JSON.parse(sessionStorage.getItem('pressel_utms') || '{}');
         Object.keys(capturedParams).forEach(function(key) {
@@ -100,37 +102,30 @@
     function buildRedirectUrl(baseUrl) {
         try {
             var url = new URL(baseUrl);
-            
-            // Adiciona todos os parâmetros capturados
             Object.keys(capturedParams).forEach(function(key) {
                 if (!url.searchParams.has(key)) {
                     url.searchParams.set(key, capturedParams[key]);
                 }
             });
-            
             return url.toString();
         } catch(e) {
             return baseUrl;
         }
     }
     
-    // URL de destino
     var DESTINATION_URL = 'https://apextry.com/go/pest';
     
-    // Mostra os parâmetros capturados no console (para debug)
     if (hasParams) {
         console.log('📊 Parâmetros capturados pela Pressel:', capturedParams);
         var finalUrl = buildRedirectUrl(DESTINATION_URL);
         console.log('🔗 URL que será usada no clique:', finalUrl);
     }
     
-    // Função de redirecionamento (SÓ NO CLIQUE)
     function redirectWithParams() {
         var currentUrl = buildRedirectUrl(DESTINATION_URL);
         window.location.href = currentUrl;
     }
     
-    // Aguarda o DOM carregar e adiciona evento ao botão
     document.addEventListener('DOMContentLoaded', function() {
         var btn = document.querySelector('.button');
         if (btn) {
@@ -141,7 +136,6 @@
         }
     });
     
-    // Fallback: se o DOM já estiver carregado
     if (document.readyState !== 'loading') {
         var btn = document.querySelector('.button');
         if (btn) {
